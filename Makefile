@@ -80,10 +80,11 @@ install-metrics-server: ## Install metrics-server
     metrics-server \
     --namespace kube-system \
     --install \
-		--set "extraArgs.kubelet-preferred-address-types=InternalIP" 
-		--set "extraArgs.kubelet-insecure-tls=true" 
+		--set "extraArgs.kubelet-preferred-address-types=InternalIP" \
+		--set "extraArgs.kubelet-insecure-tls=true" \
 		--set "apiService.create=true" \
 		bitnami/metrics-server
+# --set "args={--kubelet-insecure-tls, --kubelet-preferred-address-types=InternalIP}"
 
 install-dashboards-all: install-kubernetes-dashboard install-weave-scope ## Install kubernetes-dashboard and weave-scope
 
@@ -95,7 +96,8 @@ install-kubernetes-dashboard: ## Install kubernetes-dashboard
 	helm upgrade \
     kubernetes-dashboard \
     --namespace kube-system \
-    --install kubernetes-dashboard/kubernetes-dashboard
+    --install \
+		kubernetes-dashboard/kubernetes-dashboard
 	@echo '${TOKEN}'
 	# To proxy all of the kubernetes APIs: $ kubectl proxy
 	# Then, click on: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login
@@ -124,7 +126,7 @@ install-kiali: ## Install kiali
     --repo https://kiali.org/helm-charts \
     kiali-server \
     kiali-server
-	@echo 'istioctl dashboard kiali to connect to kiali dashboard'
+	@echo '\"istioctl dashboard kiali\" to connect to kiali dashboard'
 
 install-prometheus-operator: ## Install prometheus-operator
 	@echo 'ref: https://operatorhub.io/operator/prometheus'
