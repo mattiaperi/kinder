@@ -79,7 +79,11 @@ install-metrics-server: ## Install metrics-server
 	helm upgrade \
     metrics-server \
     --namespace kube-system \
-    --install --set "args={--kubelet-insecure-tls, --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname}" --set apiService.create=true bitnami/metrics-server --namespace kube-system
+    --install \
+		--set "extraArgs.kubelet-preferred-address-types=InternalIP" 
+		--set "extraArgs.kubelet-insecure-tls=true" 
+		--set "apiService.create=true" \
+		bitnami/metrics-server
 
 install-dashboards-all: install-kubernetes-dashboard install-weave-scope ## Install kubernetes-dashboard and weave-scope
 
