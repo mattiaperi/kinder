@@ -52,24 +52,23 @@ help:  ## Display this help
 
 install-single-node: kinder-create-single-node                 install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a single-node cluster      [OK]
 
-install-multi-nodes:  kinder-create-multi-nodes install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node cluster       [?]
+install-multi-nodes: kinder-create-multi-nodes install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node cluster       [?]
 
-install-eks-d:       kinder-create-eks-d        install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node EKS-D cluster [OK]
+install-eks-d:       kinder-create-eks-d       install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node EKS-D cluster [OK]
 
 kinder-create-single-node: ## Create single node cluster
-	kind create cluster --config=kinder-single-node.yaml --name ${CLUSTER_NAME}-single-node
+	kind create cluster --config=kinder-single-node.yaml --name ${CLUSTER_NAME}
 	# Set CoreDNS to just 1 replicas
 	kubectl scale deployment --replicas 1 coredns --namespace kube-system
 
 kinder-create-multi-nodes: ## Create multi nodes cluster
-	kind create cluster --config=kinder-multi-nodes.yaml --name ${CLUSTER_NAME}-multi-node
-	make install-calico
+	kind create cluster --config=kinder-multi-nodes.yaml --name ${CLUSTER_NAME}
 
 kinder-create-eks-d: ## Create multi nodes cluster based on AWS EKS-D distribution
-	kind create cluster --config=kinder-eks-d.yaml --name ${CLUSTER_NAME}-eks-d
+	kind create cluster --config=kinder-eks-d.yaml --name ${CLUSTER_NAME}
 
 install-calico: ## Install CNI calico
-	curl https://docs.projectcalico.org/manifests/calico.yaml | kubectl apply -f -
+	curl -sSLk https://docs.projectcalico.org/manifests/calico.yaml | kubectl apply -f -
 
 install-metrics-server: ## Install metrics-server
 	# Add metrics-server helm repository
@@ -126,7 +125,7 @@ install-kiali: ## Install kiali
     --repo https://kiali.org/helm-charts \
     kiali-server \
     kiali-server
-	@echo '\"istioctl dashboard kiali\" to connect to kiali dashboard'
+	@echo '"istioctl dashboard kiali" to connect to kiali dashboard'
 
 install-prometheus-operator: ## Install prometheus-operator
 	@echo 'ref: https://operatorhub.io/operator/prometheus'
@@ -143,18 +142,22 @@ install-nginx-1: ## Install nginx-1
 	# To test it (mode #1):
 	# - $ kubectl port-forward svc/istio-ingressgateway 8080:80 -n istio-system
 	# - $ curl -H'Host:nginx-1.127.0.0.1.nip.io' localhost:8080
+  #
 	# To test it (mode #2):
 	# - $ kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -n kube-system
 	# - dnstools# curl nginx-1.nginx-test.svc.cluster.local
 	# - nginx-1
 	# - dnstools# curl istio-ingressgateway.istio-system.svc.cluster.local
 	# - nginx-1
-	# To test it (mode #3):
+	#
+	# To test it (mode #3, if you installed istio and map-ingressgateway-nodeports):
+	# - $ curl -H'Host:nginx-1.127.0.0.1.nip.io' localhost
+	#
+	# Other useful info:
 	# export INGRESS_PORT=${INGRESS_PORT}
 	# export SECURE_INGRESS_PORT=${SECURE_INGRESS_PORT}
 	# export TCP_INGRESS_PORT=${TCP_INGRESS_PORT}
 	# export INGRESS_HOST=${INGRESS_HOST}
-	# - $ curl -H'Host:nginx-1.127.0.0.1.nip.io' localhost
 
 certs: ## Show cluster certificates
 	@echo 'Cluster: ${CLUSTER_NAME}'
@@ -174,6 +177,4 @@ certs: ## Show cluster certificates
 #@echo ${CLUSTER_CA} | base64 -d > cluster.crt 
 
 delete-all: ## Delete kinder
-	kind delete cluster --name ${CLUSTER_NAME}-eks-d
-	kind delete cluster --name ${CLUSTER_NAME}-single-node 
-	kind delete cluster --name ${CLUSTER_NAME}-multi-node 
+	kind delete cluster --name ${CLUSTER_NAME}

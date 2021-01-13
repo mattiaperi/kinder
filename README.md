@@ -16,8 +16,12 @@ PREREQUISITES:
 Usage:
   make <target>
   help                          Display this help
+  install-single-node           Install a single-node cluster
+  install-multi-nodes           Install a multi-node cluster
+  install-eks-d                 Install a multi-node EKS-D cluster  
   kinder-create-single-node     Create single node cluster
   kinder-create-multi-nodes     Create multi nodes cluster
+  kinder-create-eks-d           Create multi nodes cluster based on AWS EKS-D distribution
   install-calico                Install CNI calico
   install-metrics-server        Install metrics-server
   install-dashboards-all        Install kubernetes-dashboard and weave-scope
@@ -28,20 +32,14 @@ Usage:
   install-kiali                 Install kiali
   install-prometheus-operator   Install prometheus-operator
   certs                         Show cluster certificates
-  delete                        Delete kinder
+  delete-all                    Delete kinder
 ```
 
-### Example: install a KinD cluster single node 
-```bash
-$ kinder-create-single-node
+### Example
+To install a multi node cluster based on EKS-D distribution, with some tooling around it:
+```
+$ make install-eks-d
 ```
 
-
-```bash
-$ make insta
-```
-
-### Test
-```bash
-$ curl -XGET -sSLIk localhost:15021/healthz/ready
-```
+## WARNING
+> :warning: The repository scripts are just for personal use and they work for me. You are more then welcome to use it, I'll be honored, but this comes with no warranty. Use it at your own risk. Please feel free to contribute!
