@@ -1,0 +1,19 @@
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: weave-scope-virtualservice
+  namespace: weave
+spec:
+  hosts:
+    - weave-scope.127.0.0.1.nip.io
+  gateways:
+    - istio-system/istio-config-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: weave-scope-app
+            port:
+              number: 80

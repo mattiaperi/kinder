@@ -1,6 +1,9 @@
 # kinder
 KinD made simple
 
+## WARNING
+> :warning: The repository scripts are just for personal use and they work for me. You are more then welcome to use it, I'll be honored, but this comes with no warranty. Use it at your own risk. Please feel free to contribute!
+
 ## How to
 
 ```bash
@@ -35,9 +38,6 @@ Components installed with "latest" can be potentially broken :)
 Usage:
   make <target>
   help                          Display this help
-  install-single-node           Install a single-node cluster
-  install-multi-nodes           Install a multi-node cluster
-  install-eks-d                 Install a multi-node EKS-D cluster
   create-cluster-single-node    Create single node cluster
   create-cluster-multi-nodes    Create multi nodes cluster
   create-cluster-eks-d          Create multi nodes cluster based on AWS EKS-D distribution
@@ -52,20 +52,18 @@ Usage:
   install-prometheus            Install prometheus [WIP]
   install-kiali                 Install kiali
   configure-istio-urls          Configure Istio URLs
-  check-urls                    Check URLs
   install-kyverno               Install kyverno (Policy as Code)
   install-fleet                 Install fleet
   configure-fleet-kyverno       Configure kyverno best practices policies via fleet
   certs                         CERTIFICATES - Show cluster certificates
-  certs-creation-browser        CERTIFICATES - Create certification to be imported into browser to access i.e. kubernetes-dashboard
+  certs-creation-browser        CERTIFICATES - Create certification to be imported into browser (kubernetes-dashboard)
+  validate-metrics-server       VALIDATE - metrics-server
+  validate-istio-urls           VALIDATE - istio virtualservices URLs
   delete                        Delete cluster
 ```
 
 ### Example
-To install a multi node cluster based on EKS-D distribution, with some tooling around it:
+To install a multi-node cluster based on EKS-D distribution, with some tooling around it:
 ```
-$ make install-eks-d
+$ make kinder-eks-d
 ```
-
-## WARNING
-> :warning: The repository scripts are just for personal use and they work for me. You are more then welcome to use it, I'll be honored, but this comes with no warranty. Use it at your own risk. Please feel free to contribute!

@@ -36,9 +36,9 @@ INGRESS_HOST=$(shell kubectl get po -l istio=ingressgateway -n istio-system -o j
 
 
 #--- versions variables ---
+#RELEASE: https://github.com/kbst/kind-eks-d/releases
 #RELEASES: https://github.com/rancher/fleet/releases/
 FLEET_VERSION = 0.3.3
-
 #RELEASE: https://github.com/kyverno/kyverno/releases
 
 
@@ -78,11 +78,11 @@ help:  ## Display this help
 	@echo ''
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-install-single-node: create-cluster-single-node                install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a single-node cluster
+# install-single-node: create-cluster-single-node                install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a single-node cluster
+# install-multi-nodes: create-cluster-multi-nodes install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node cluster
+# install-eks-d:       create-cluster-eks-d       install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node EKS-D cluster
 
-install-multi-nodes: create-cluster-multi-nodes install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node cluster
-
-install-eks-d:       create-cluster-eks-d       install-calico install-metrics-server install-istio map-ingressgateway-nodeports install-dashboards-all install-nginx-1 ## Install a multi-node EKS-D cluster
+kinder-eks-d: create-cluster-eks-d install-calico install-metrics-server install-dashboards-all install-nginx-1 install-istio-all install-kyverno configure-fleet-kyverno certs
 
 create-cluster-single-node: ## Create single node cluster
 	kind create cluster --config=cluster-single-node.yaml --name ${CLUSTER_NAME}
@@ -156,6 +156,11 @@ install-istio: ## Install istio and default gateway
 #This service type needs infrastructure support which works in cloud offerings like GKE, AKS, EKS etc.
 	istioctl install --set profile=demo --skip-confirmation
 	istioctl version
+	# Other useful info:
+	# export INGRESS_PORT=${INGRESS_PORT}
+	# export SECURE_INGRESS_PORT=${SECURE_INGRESS_PORT}
+	# export TCP_INGRESS_PORT=${TCP_INGRESS_PORT}
+	# export INGRESS_HOST=${INGRESS_HOST}
 	kubectl apply -f istio-gateway.yaml
 
 # install-prometheus-operator: ## Install prometheus-operator [WIP]
@@ -232,17 +237,10 @@ configure-istio-urls: ## Configure Istio URLs
 	@echo 'Click on http://alertmanager.127.0.0.1.nip.io to connect to alertmanager dashboard'
 	kubectl apply -f istio-kubernetes-dashboard-virtualservice.yaml
 	@echo 'Click on http://kubernetes-dashboard.127.0.0.1.nip.io to connect to alertmanager dashboard'
+	kubectl apply -f istio-weave-scope-virtualservice.yaml
+	@echo 'Click on http://weave-scope.127.0.0.1.nip.io to connect to weave scope dashboard'
 	kubectl apply -f istio-nginx-1-virtualservice.yaml
 	@echo 'Click on http://nginx-1.127.0.0.1.nip.io to connect to nginx-1 workload'
-
-check-urls: ## Check URLs
-#@$(eval URL="http://kiali.127.0.0.1.nip.io")
-#@$(eval HTTP_CODE = $(shell curl -o /dev/null -w "%{http_code}\n" -sSLIk --max-time 2 "${URL}" 2>/dev/null))
-#@[ "${HTTP_CODE}" == "200" ]  && (echo -n 'Click on http://kiali.127.0.0.1.nip.io to connect to kiali dashboard' && echo ' --> OK')
-	@for i in "kiali" "prometheus" "grafana" "alertmanager" "kubernetes-dashboard" "nginx-1"; do \
-    URL="http://$${i}.127.0.0.1.nip.io"; echo -n "Click on: $${URL} --> HTTP_CODE="; \
-    curl -XGET -o /dev/null -w "%{http_code}\n" -sSLIk --max-time 2 "$${URL}" 2>/dev/null; \
-  done
 
 install-kyverno: ## Install kyverno (Policy as Code)
 	# Install the Kyverno Helm chart into a new namespace called "kyverno"
@@ -280,20 +278,16 @@ install-nginx-1: ## Install demo application nginx-1
 	# - $ curl -H'Host:nginx-1.127.0.0.1.nip.io' localhost:8080
   #
 	# To test it (mode #2):
-	# - $ kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools -n kube-system
-	# - dnstools# curl nginx-1.nginx-test.svc.cluster.local
+	# - $ kubectl run -it --rm --restart=Never --image=mattiaperi/toolbox:latest toolbox -n kube-system -- bash
+	# - toolbox# curl nginx-1.nginx-test.svc.cluster.local
 	# - nginx-1
-	# - dnstools# curl istio-ingressgateway.istio-system.svc.cluster.local
+	# - toolbox# curl istio-ingressgateway.istio-system.svc.cluster.local
 	# - nginx-1
 	#
 	# To test it (mode #3, if you installed istio and map-ingressgateway-nodeports):
 	# - $ curl -H'Host:nginx-1.127.0.0.1.nip.io' localhost
-	#
-	# Other useful info:
-	# export INGRESS_PORT=${INGRESS_PORT}
-	# export SECURE_INGRESS_PORT=${SECURE_INGRESS_PORT}
-	# export TCP_INGRESS_PORT=${TCP_INGRESS_PORT}
-	# export INGRESS_HOST=${INGRESS_HOST}
+	# - $ curl nginx-1.127.0.0.1.nip.io
+#kubectl get pods -l=app=nginx-1 -n nginx-test --no-headers=true -o=custom-columns='NAME:.metadata.name' | head -n1
 
 certs: ## CERTIFICATES - Show cluster certificates
 	@echo 'Cluster: ${CLUSTER_NAME}'
@@ -308,7 +302,7 @@ certs: ## CERTIFICATES - Show cluster certificates
 	@echo 'Cluster Certificate Authority:'
 	@echo ${CLUSTER_CA} | base64 --decode
 
-certs-creation-browser: ## CERTIFICATES - Create certification to be imported into browser to access i.e. kubernetes-dashboard
+certs-creation-browser: ## CERTIFICATES - Create certification to be imported into browser (kubernetes-dashboard)
 	echo ${CERTIFICATE} | base64 --decode > client-certificate-data-${CONTEXT}.crt
 	echo ${KEY} | base64 --decode > client-key-data-${CONTEXT}.key
 	# Following command would ask for encryption password, required when you need to import it to MacOs Keychain
@@ -316,16 +310,29 @@ certs-creation-browser: ## CERTIFICATES - Create certification to be imported in
 	rm client-certificate-data-${CONTEXT}.crt client-key-data-${CONTEXT}.key
 #@echo ${CLUSTER_CA} | base64 -d > ${CONTEXT}-cluster-ca.crt 
 
-delete: ## Delete cluster
-	kind delete cluster --name ${CLUSTER_NAME}
+validate: validate-istio validate-metrics-server validate-istio-urls
 
-validation: create-cluster-eks-d install-calico install-metrics-server install-dashboards-all install-nginx-1 install-istio-all install-kyverno configure-fleet-kyverno certs
-	# Just a validation target
-	@echo 'Validation nginx-1 deployment'
-	sleep 60 && curl -H'Host:nginx-1.127.0.0.1.nip.io' localhost
-	@echo 'Validation istio'
+validate-istio:
+	@echo -n 'Validate istio: '
 	istioctl proxy-status
 	istioctl analyze -A || true
-	istioctl validate -f nginx-test/nginx-1.yaml
-	kubectl get pods -l=app=nginx-1 -n nginx-test --no-headers=true -o=custom-columns='NAME:.metadata.name' | head -n1
-	make check-urls
+	istioctl validate -f nginx-test/nginx-1.yaml || true
+
+validate-metrics-server: ## VALIDATE - metrics-server
+#Do note that each command in the target body runs in a separate subshell.
+	@echo -n 'Validate metrics-server: '
+	@kubectl get --raw "/apis/metrics.k8s.io/v1beta1/nodes" >/dev/null 2>&1; \
+  if [ $$? -eq 0 ] ; then echo "OK"; else echo "NO OK"; fi
+
+validate-istio-urls: ## VALIDATE - istio virtualservices URLs
+	@echo 'Validate istio urls: '
+# @$(eval URL="http://kiali.127.0.0.1.nip.io")
+# @$(eval HTTP_CODE = $(shell curl -o /dev/null -w "%{http_code}\n" -sSLIk --max-time 2 "${URL}" 2>/dev/null))
+# @[ "${HTTP_CODE}" == "200" ]  && (echo -n 'Click on: http://kiali.127.0.0.1.nip.io to connect to kiali dashboard' && echo ' --> OK')
+	@for i in "kiali" "prometheus" "grafana" "alertmanager" "kubernetes-dashboard" "weave-scope" "nginx-1"; do \
+    URL="http://$${i}.127.0.0.1.nip.io"; echo -n "> Click on: $${URL} --> HTTP_CODE="; \
+    curl -XGET -o /dev/null -w "%{http_code}\n" -sSLIk --max-time 2 "$${URL}" 2>/dev/null; \
+  done
+
+delete: ## Delete cluster
+	kind delete cluster --name ${CLUSTER_NAME}
